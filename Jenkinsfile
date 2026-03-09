@@ -9,7 +9,6 @@ pipeline {
     environment {
         // This ensures your Mac's local paths are visible to Jenkins
         PATH = "/usr/local/bin:${env.PATH}"
-        DOCKER_HOST = "unix:///Users/${USER}/.docker/run/docker.desktop.sock"
     }
 
     stages {
