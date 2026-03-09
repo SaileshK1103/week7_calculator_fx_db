@@ -2,35 +2,43 @@ pipeline {
     agent any
 
     tools {
-        // This allows Jenkins to find your Maven installation
         maven 'Maven3'
     }
 
     environment {
-        // This ensures your Mac's local paths are visible to Jenkins
-        PATH = "/usr/local/bin:${env.PATH}"
+          PATH = "/usr/local/bin:${env.PATH}"
+          DOCKERHUB_CREDENTIALS_ID = 'Docker_Hub'
+          DOCKERHUB_REPO = 'saileshk1103/week7_calculator_fx_db'
+          DOCKER_IMAGE_TAG = 'latest'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // 'checkout scm' is better for SCM-based pipelines
-                checkout scm
+               // Ensure this points to your NEW Week 7 repository
+               git branch: 'main', url: 'https://github.com/SaileshK1103/week7_calculator_fx_db.git'
             }
         }
 
         stage('Build JAR') {
             steps {
-                // Using clean package to create the JAR file
                 sh 'mvn clean package -DskipTests'
             }
         }
 
-        stage('Docker Build') {
-            steps {
-                // This builds your specific week 7 image
-                sh 'docker build -t saileshk1103/week7_calculator_fx_db .'
-            }
+        stage('Build and Push Multi-Arch Image') {
+             steps {
+                 script {
+                     withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS_ID, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                         // Secure Login
+                         sh "echo ${PASS} | docker login -u ${USER} --password-stdin"
+
+                         // Builds for both Intel (AMD64) and Mac/M1 (ARM64)
+                         // This is the "Gold Standard" for your assignment!
+                         sh "docker buildx build --platform linux/amd64,linux/arm64 -t ${DOCKERHUB_REPO}:${DOCKER_IMAGE_TAG} . --push"
+                     }
+                 }
+             }
         }
     }
 }
